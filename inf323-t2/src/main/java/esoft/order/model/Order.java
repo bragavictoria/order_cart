@@ -1,15 +1,20 @@
 package esoft.order.model;
 
+import esoft.abs.model.Context;
+import esoft.abs.model.ListQtyLine;
+import esoft.abs.model.State;
 import esoft.com.model.Address;
 import esoft.com.model.ShipType;
-import java.util.Objects;
-import java.util.ArrayList;
+
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Collections;
+import java.util.Objects;
+
 import static esoft.com.util.Validator.validatePositive;
 
-public class Order  {
+public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Serializable {
     private final double subtotal;
     private final double tax;
     private final double total;
@@ -19,7 +24,7 @@ public class Order  {
     private static final long serialVersionUID = 1L;
 
     private OrderState status;
-    private final Address billingAdress;
+    private final Address billingAddress;
     private final Address shippingAddress;
     private final ShipType shipType;
     private final CCTransaction cc;
@@ -27,81 +32,86 @@ public class Order  {
     private final List<OrderLine> lines;
 
     public Order(double subtotal, double tax, double total, int id, Date date, Date shipDate, OrderState status,
-                 Address billingAdress, Address shippingAddress, ShipType shipeType, CCTransaction cc, Customer
+                 Address billingAddress, Address shippingAddress, ShipType shipType, CCTransaction cc, Customer
                          customer, List<OrderLine> lines, Cart cart) {
-
-        this.subtotal = validatePositive(cart.subTotal(0), "Subtotal");
-        this.tax = validatePositive(cart.tax(0), "Tax");
-        this.total = validatePositive(cart.total(0), "Total");
+        validatePositive(cart.subTotal(0), "Subtotal");
+        this.subtotal = cart.subTotal(0);
+        validatePositive(cart.tax(0), "Tax");
+        this.tax = cart.tax(0);
+        validatePositive(cart.total(0), "Total");
+        this.total = cart.total(0);
         this.id = id;
         this.date = Objects.requireNonNull(date, "A data não pode ser nula");
         this.shipDate = shipDate;
-        this.status = status = OrderState.PENDING;
-        this.billingAdress = Objects.requireNonNull(billingAdress; "O endereço de cobrança não pode ser nulo");
+        this.status = status;
+        this.billingAddress = Objects.requireNonNull(billingAddress, "O endereço de cobrança não pode ser nulo");
         this.shippingAddress = Objects.requireNonNull(shippingAddress, "O endereço de entrega não pode ser nulo");
-        this.shipType = Objects.requireNonNull(shipeType,"O tipo de cidade não pode ser nulo" );
+        this.shipType = Objects.requireNonNull(shipType, "O tipo de cidade não pode ser nulo");
         this.cc = Objects.requireNonNull(cc, "A transação não pode ser nula");
         this.customer = Objects.requireNonNull(customer, "O cliente não pode ser nulo");
-        this.lines = Collections.unmodifiableList(Objects.requireNonNull(lines, "O pedido não pode ser nulo"));
-        if (lines.isEmpty()){
+        if (lines.isEmpty()) {
             throw new IllegalArgumentException("Order lines não pode ser vazia");
         }
+        this.lines = Collections.unmodifiableList(Objects.requireNonNull(lines, "O pedido não pode ser nulo"));
     }
 
-    private List<OrderLine> convertCartLines(List <CartLine> cartLines){
-        List<OrderLine> orderLines = new ArrayList<>();
-        for (CartLine cartLine : cartLines) {
-            OrderLine orderLine = new OrderLine (cartLine.getProduct(), cartLine.getQty(), cartLine.getPrice());
-            orderLines.add(orderLine);
-        }
-        return orderLines;
+    public double getSubtotal() {
+        return subtotal;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public double getTax() {
+        return tax;
+    }
+
+    public double getTotal() {
+        return total;
     }
 
     public Date getDate() {
         return new Date(date.getTime());
     }
 
-    public Address getBillingAdress() {
-        return billingAdress;
-    }
-
-    public Address getShippingAddress(){
-        return shippingAddress;
-    }
-
-    public double getSubtotal(){
-        return subtotal;
-    }
-
-    public double getTax(){
-        return tax;
-    }
-
-    public double getTotal(){
-        return total;
-    }
-
-    public int getId(){
-        return id;
-    }
-
-    public Date getShipDate(){
+    public Date getShipDate() {
         return new Date(shipDate.getTime());
     }
 
-    public List<OrderLine> getLines(){
+    public Address getBillingAddress() {
+        return billingAddress;
+    }
+
+    public Address getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public ShipType getShipType() {
+        return shipType;
+    }
+
+    public CCTransaction getCc() {
+        return cc;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    @Override
+    public State getStatus() {
+        return status;
+    }
+
+    @Override
+    public void setStatus(OrderState orderState) {
+        this.status = orderState;
+    }
+
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public List<OrderLine> getLines() {
         return lines;
-    }
-
-    public CCTransaction getCcTransaction(){
-        return ccTransaction;
-    }
-
-    public void setStatus (OrderState status)(){
-        this.status = status;
     }
 }
