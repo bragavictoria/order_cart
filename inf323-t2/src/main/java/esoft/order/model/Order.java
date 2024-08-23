@@ -7,10 +7,7 @@ import esoft.com.model.Address;
 import esoft.com.model.ShipType;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static esoft.com.util.Validator.validatePositive;
 
@@ -46,13 +43,54 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
         this.status = status;
         this.billingAddress = Objects.requireNonNull(billingAddress, "O endereço de cobrança não pode ser nulo");
         this.shippingAddress = Objects.requireNonNull(shippingAddress, "O endereço de entrega não pode ser nulo");
-        this.shipType = Objects.requireNonNull(shipType, "O tipo de cidade não pode ser nulo");
+        this.shipType = Objects.requireNonNull(shipType, "O tipo de envio não pode ser nulo");
         this.cc = Objects.requireNonNull(cc, "A transação não pode ser nula");
         this.customer = Objects.requireNonNull(customer, "O cliente não pode ser nulo");
         if (lines.isEmpty()) {
             throw new IllegalArgumentException("Order lines não pode ser vazia");
         }
         this.lines = Collections.unmodifiableList(Objects.requireNonNull(lines, "O pedido não pode ser nulo"));
+    }
+
+    public Order (double subtotal, double tax, double total, int id, Date date, Date shipDate, Address billingAddress,
+                  Address shippingAddress, CCTransaction ccTransaction, Customer customer, List<OrderLine> lines, ShipType shipType) {
+
+        this.subtotal = validatePositive(calculateSubtotal(lines), "Subtotal");
+        this.tax = validatePositive(calculateTax(lines), "Tax");
+        this.total = validatePositive(calculateTotal(lines), "Total");
+        this.id = id;
+        this.date = new Date (Objects.requireNonNull(date, "A data não pode ser nula").getTime());
+        this.shipDate = new Date (Objects.requireNonNull(shipDate, "A data de envio não pode ser nula").getTime());
+        this.billingAddress = Objects.requireNonNull(shippingAddress, "O endereço de cobrança não pode ser nulo");
+        this.shippingAddress = Objects.requireNonNull(shippingAddress, "O endereço de entrega não pode ser nulo");
+        this.cc = Objects.requireNonNull(ccTransaction, "A transação não pode ser nula");
+        this.customer = Objects.requireNonNull(customer, "O cliente não pode ser nulo");
+        this.lines = Collections.unmodifiableList(Objects.requireNonNull(lines, "Order lines não pode ser nula"));
+        if (lines.isEmpty()) {
+            throw new IllegalArgumentException("Order lines não pode ser vazia");
+        }
+        this.shipType = Objects.requireNonNull(shipType, "O tipo de envio não pode ser nulo");
+    }
+
+    private double calculateSubtotal(List<OrderLine> lines) {
+        return lines.stream().mapToDouble(OrderLine::getPrice).sum();
+    }
+
+    private double calculateTax(List<OrderLine> lines) {
+        return calculateSubtotal(lines) * 0.0825;
+    }
+
+    private double calculateTotal(List<OrderLine> lines) {
+        return calculateSubtotal(lines) + calculateTax(lines);
+    }
+
+    public List<OrderLine> convertCartLines(List <CartLine> cartLines){
+        List<OrderLine> orderLines = new ArrayList<>();
+        for (CartLine cartLine : cartLines) {
+            OrderLine orderLine = new OrderLine (cartLine.getProduct(), cartLine.getQty(), cartLine.getPrice(), "");
+            orderLines.add(orderLine);
+        }
+        return orderLines;
     }
 
     public double getSubtotal() {
@@ -96,7 +134,7 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
     }
 
     @Override
-    public State getStatus() {
+    public OrderState getStatus() {
         return status;
     }
 
@@ -113,5 +151,12 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
     @Override
     public List<OrderLine> getLines() {
         return lines;
+    }
+
+    private double validatePositive(double value, String attributeName) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(attributeName + " precisa ser positivo");
+        }
+        return value;
     }
 }
