@@ -2,14 +2,13 @@ package esoft.order.model;
 
 import esoft.abs.model.Context;
 import esoft.abs.model.ListQtyLine;
-import esoft.abs.model.State;
 import esoft.com.model.Address;
 import esoft.com.model.ShipType;
 
 import java.io.Serializable;
 import java.util.*;
 
-import static esoft.com.util.Validator.validatePositive;
+import static esoft.com.util.Validator.validateNotNull;
 
 public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Serializable {
     private final double subtotal;
@@ -39,6 +38,7 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
         this.total = cart.total(0);
         this.id = id;
         this.date = Objects.requireNonNull(date, "A data não pode ser nula");
+        validateNotNull(shipDate, "ShipDate");
         this.shipDate = shipDate;
         this.status = status;
         this.billingAddress = Objects.requireNonNull(billingAddress, "O endereço de cobrança não pode ser nulo");
@@ -52,15 +52,15 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
         this.lines = Collections.unmodifiableList(Objects.requireNonNull(lines, "O pedido não pode ser nulo"));
     }
 
-    public Order (double subtotal, double tax, double total, int id, Date date, Date shipDate, Address billingAddress,
-                  Address shippingAddress, CCTransaction ccTransaction, Customer customer, List<OrderLine> lines, ShipType shipType) {
+    public Order(double subtotal, double tax, double total, int id, Date date, Date shipDate, Address billingAddress,
+                 Address shippingAddress, CCTransaction ccTransaction, Customer customer, List<OrderLine> lines, ShipType shipType) {
 
         this.subtotal = validatePositive(calculateSubtotal(lines), "Subtotal");
         this.tax = validatePositive(calculateTax(lines), "Tax");
         this.total = validatePositive(calculateTotal(lines), "Total");
         this.id = id;
-        this.date = new Date (Objects.requireNonNull(date, "A data não pode ser nula").getTime());
-        this.shipDate = new Date (Objects.requireNonNull(shipDate, "A data de envio não pode ser nula").getTime());
+        this.date = new Date(Objects.requireNonNull(date, "A data não pode ser nula").getTime());
+        this.shipDate = new Date(Objects.requireNonNull(shipDate, "A data de envio não pode ser nula").getTime());
         this.billingAddress = Objects.requireNonNull(shippingAddress, "O endereço de cobrança não pode ser nulo");
         this.shippingAddress = Objects.requireNonNull(shippingAddress, "O endereço de entrega não pode ser nulo");
         this.cc = Objects.requireNonNull(ccTransaction, "A transação não pode ser nula");
@@ -84,10 +84,10 @@ public class Order implements Context<OrderState>, ListQtyLine<OrderLine>, Seria
         return calculateSubtotal(lines) + calculateTax(lines);
     }
 
-    public List<OrderLine> convertCartLines(List <CartLine> cartLines){
+    public List<OrderLine> convertCartLines(List<CartLine> cartLines) {
         List<OrderLine> orderLines = new ArrayList<>();
         for (CartLine cartLine : cartLines) {
-            OrderLine orderLine = new OrderLine (cartLine.getProduct(), cartLine.getQty(), cartLine.getPrice(), "");
+            OrderLine orderLine = new OrderLine(cartLine.getProduct(), cartLine.getQty(), cartLine.getPrice(), "");
             orderLines.add(orderLine);
         }
         return orderLines;
